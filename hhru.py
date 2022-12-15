@@ -1,98 +1,41 @@
 import requests
-import time
-import random
-from datetime import datetime
-import pandas as pd
-import seaborn as sns
-import config
-import warnings
-
-sns.set(rc={'figure.figsize':(12,7)})
-
-def get_data_from_hh(url):
-    user = get_headers_proxy()
-    data = requests.get(url, headers=user['headers'], proxies=user['proxy_dict'], timeout=5).json()
-    return data
-
-def get_headers_proxy():
-    users = config.USER_AGENTS_PROXY_LIST
-    user = random.choice(users)
-    headers = {'user-agent': user['user-agent']}
-    proxy_dict = {'http': user['http_proxy']}
-    persona = {
-        'headers': headers,
-        'proxy_dict': proxy_dict
-    }
-    return persona
-
-def prepare_salary(data):
-    salary_from = []
-    salary_to = []
-    print('Количество вакансий: ', data['found'])
-
-    quantity_pagination = round(data['found'] / 100, 0) + 1
-    page = 0
-
-    while page <= quantity_pagination:
-        url = f'https://api.hh.ru/vacancies?clusters=true&only_with_salary=true&enable_snippets=true&st=searchVacancy&' \
-              f'text=менеджер+по+работе+с+клиентами&search_field=name&per_page=100&page={page}&area=1384'
-        data = get_data_from_hh(url)
-
-        for vacancy in data['items']:
-
-            print(vacancy['name'], '->', vacancy['published_at'][:10], '->', vacancy['salary']['from'], '->', vacancy['salary']['to'])
-
-            if type(vacancy['salary']['from']) == int:
-                salary_from.append(vacancy['salary']['from'])
-            if type(vacancy['salary']['to']) == int:
-                salary_to.append(vacancy['salary']['to'])
-
-        page += 1
-        random_timeout = random.randint(3, 9)
-        time.sleep(random_timeout)
-
-    salary = {
-        'salary_from': salary_from,
-        'salary_to': salary_to
-    }
-
-    return salary
-
-def salary_average(salary):
-    salary_from_avg = round(sum(salary['salary_from']) / len(salary['salary_from']), 0)
-    salary_to_avg = round(sum(salary['salary_to']) / len(salary['salary_to']), 0)
-
-    salary_avg = {
-        'salary_from_avg': salary_from_avg,
-        'salary_to_avg': salary_to_avg
-    }
-
-    return salary_avg
-
-def seaborn_displot(data):
-    now = datetime.now()
-    date = now.strftime("%Y-%m-%d-%H%M%S")
-    filename = 'raspredelenie_' + date + '.png'
-
-    pd_data = pd.Series(data)
-    res = sns.displot(pd_data)
-    res.savefig(filename)
-
-def seaborn_boxplot(data):
-    warnings.simplefilter(action="ignore", category=FutureWarning)
-    now = datetime.now()
-    date = now.strftime("%Y-%m-%d-%H%M%S")
-    filename = 'raspredelenie_box_' + date + '.png'
-
-    pd_data = pd.Series(data)
-    data_result = pd_data.value_counts().sort_values(ascending=False).index.values
-    sns.boxplot(data_result).figure.savefig(filename)
-
-url = 'https://api.hh.ru/vacancies?clusters=true&only_with_salary=true&enable_snippets=true&st=searchVacancy' \
-          '&text=инженер+проектировщик&search_field=name&per_page=100&area=1384'
-
-data = get_data_from_hh(url)
-salary = prepare_salary(data)
-salary_avg = salary_average(salary)
-
-print(salary_avg)
+x=[]
+all_zp = 0
+all_n = 0
+#цикл, который скачивает вакансии
+for i in range(200):
+    # запрос
+    url = 'https://api.hh.ru/vacancies'
+    #параметры, которые будут добавлены к запросу
+    par = {'text': 'Инженер-проектировщик', 'area':'1384','per_page':'10', 'page':i}
+    r = requests.get(url, params=par)
+    e=r.json()
+    x.append(e)
+for j in x:
+    y = j['items']
+    #объявляем переменную n для подсчета, количества итераций цикла перебирающего зарплаты в вакансиях
+    n=0
+    #объявляем переменную sum_zp для подсчета, суммы зарплат в вакансиях
+    sum_zp=0
+    #цикл, переберает объекты, т.е перебирает вакансии
+    for i in y:
+        # проверяем есть ли значения в словаре по ключу salary. Т.е проверяем есть ли в вакансии данные по зарплате
+        if i['salary'] !=None:
+            #записываем значение в переменную s
+            s=i['salary']
+            # проверяем есть ли значения по ключу from. Т.е проверяем есть ли в вакансии данные по минимальной зп
+            if s['from'] !=None:
+                # считаем количество обработанных вакансий в которых указана минимальная ЗП
+                n+=1
+                #получаем минимальную ЗП по ключу from
+                s['from']
+                #считаем сумму ЗП по вакансиям
+                sum_zp +=s['from']
+    #добавляем сумму зп по итерации цикла
+    all_zp +=sum_zp
+    #добавляем сумму n по итерации цикла
+    all_n +=n
+    #считаем среднюю ЗП
+av_zp=all_zp/all_n
+print(av_zp)
+print(all_n)
